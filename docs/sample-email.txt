@@ -1,0 +1,27 @@
+Subject: Expense summary 2026-02-01 to 2026-02-28
+To: asha.rao@example.com
+From: expenses@example.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Dear Asha Rao,
+
+Please find the expense summary for the period below.
+
+Period: 2026-02-01 to 2026-02-28
+Receipts: 3
+Total (USD): $193.86
+
+By merchant:
+  - THE CORNER BISTRO: $99.48
+  - TARGET STORES: $50.31
+  - QUICK-MART FUEL & MORE: $44.07
+
+Receipts:
+  - 2026-02-25  QUICK-MART FUEL & MORE  $44.07
+  - 2026-02-18  TARGET STORES  $50.31
+  - 2026-02-20  THE CORNER BISTRO  $99.48
+
+Regards,
+Expense Dispatcher
