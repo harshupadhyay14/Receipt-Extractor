@@ -8,6 +8,8 @@ Upload a receipt (photo or PDF) -> extract merchant, date, line items, tax/tip a
                                   GET /receipts    Tesseract + rules
 ```
 <img width="959" height="412" alt="image" src="https://github.com/user-attachments/assets/876b0a02-0903-4726-967f-9b10f3f7ce44" />
+<img width="620" height="80" alt="dispatcher-dry-run" src="https://github.com/user-attachments/assets/e68818a8-ab16-4643-93c4-440efbd9a829" />
+
 
 ## Proof of concept: results on the assessment receipts
 
