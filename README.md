@@ -7,6 +7,7 @@ Upload a receipt (photo or PDF) -> extract merchant, date, line items, tax/tip a
    upload, status, table          POST /upload     PDF text / free VLM /     data/receipts.db
                                   GET /receipts    Tesseract + rules
 ```
+<img width="959" height="412" alt="image" src="https://github.com/user-attachments/assets/876b0a02-0903-4726-967f-9b10f3f7ce44" />
 
 ## Run it
 
