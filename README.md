@@ -36,9 +36,6 @@ Part 2 dispatcher over the same data (`--from 2026-02-01 --to 2026-02-28`):
 **An honest note on receipt 3.** The stained fuel receipt with a signature across the TOTAL/TAX lines is the hard case. With the free vision model it extracts cleanly. With local Tesseract alone, results depend on the machine and Tesseract version: on one Windows setup the total and tax were not recovered, and the app correctly showed **Review** instead of saving a wrong number. That is the intended behaviour of the validation layer, and it is why the VLM path exists.
 
 
-![alt text](<d:/Projects 2/Receipt-Extractor/docs/receipts-table.png>)
-![alt text](<d:/Projects 2/Receipt-Extractor/docs/dispatcher-dry-run.png>)
-
 ## Run it
 
 Prerequisites: Python 3.10+, [Tesseract](https://tesseract-ocr.github.io/tessdoc/Installation.html) and Poppler (`pdftotext`, `pdftoppm`).
