@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipt extractor</title>
+<style>
+  :root {
+    --bg: #eef1f4; --surface: #ffffff; --ink: #16212b; --muted: #5b6b78; --line: #d5dce3;
+    --accent: #0b6e69; --accent-ink: #ffffff; --warn-bg: #fff1d6; --warn-ink: #7a4a00;
+    --ok-bg: #dff3ee; --ok-ink: #075a55; --err-bg: #fde8e6; --err-ink: #9c1f18; --row-hover: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11181e; --surface: #18222a; --ink: #e8eef3; --muted: #9aabb8; --line: #2c3b47;
+      --accent: #3fb8af; --accent-ink: #06201e; --warn-bg: #3a2c0f; --warn-ink: #f2c879;
+      --ok-bg: #12342f; --ok-ink: #8fe0d6; --err-bg: #3d1a17; --err-ink: #f5a9a3; --row-hover: #1d2a33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 60ch; }
+  .tape { background: var(--surface); border: 2px dashed var(--line); border-radius: 6px; padding: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .tape.drag { border-color: var(--accent); background: var(--row-hover); }
+  button, .btn { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 4px; padding: 10px 16px; cursor: pointer; }
+  button:focus-visible, .row-btn:focus-visible, label.btn:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
+  button[disabled] { opacity: .55; cursor: progress; }
+  input[type=file] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .hint { color: var(--muted); }
+  #status { margin: 14px 0 0; padding: 10px 14px; border-radius: 4px; display: none; align-items: center; gap: 10px; }
+  #status.show { display: flex; }
+  #status.busy { background: var(--row-hover); border: 1px solid var(--line); }
+  #status.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  #status.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  #status.error { background: var(--err-bg); color: var(--err-ink); }
+  .spin { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 3s; } }
+  .table-head { display: flex; justify-content: space-between; align-items: baseline; margin: 32px 0 8px; }
+  h2 { font-size: 17px; margin: 0; }
+  .wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr.main:hover { background: var(--row-hover); }
+  tr:last-child td { border-bottom: 0; }
+  .row-btn { all: unset; cursor: pointer; font-weight: 600; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+  .badge.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  tr.detail td { white-space: normal; background: var(--row-hover); }
+  .detail table { min-width: 0; width: auto; }
+  .detail th, .detail td { padding: 4px 18px 4px 0; border: 0; background: transparent; }
+  .detail ul { margin: 8px 0 0; padding-left: 18px; color: var(--warn-ink); }
+  .empty { padding: 28px 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Receipt extractor</h1>
+  <p class="sub">Upload a receipt photo or PDF. Merchant, date, line items, tax, tip and total are read automatically and saved below.</p>
+
+  <section id="drop" class="tape" aria-label="Upload receipts">
+    <label class="btn">Choose receipts<input id="file" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" multiple></label>
+    <span class="hint">or drop files here (PNG, JPG, PDF, up to 10 MB each)</span>
+  </section>
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div class="table-head">
+    <h2>Saved receipts</h2>
+    <span class="hint" id="count"></span>
+  </div>
+  <div class="wrap">
+    <table>
+      <thead><tr>
+        <th>Merchant</th><th>Date</th><th class="num">Items</th><th class="num">Tax</th><th class="num">Tip</th><th class="num">Total</th><th>Check</th><th>File</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="empty" hidden>No receipts yet. Upload one to see it here.</div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => {
+  const n = Object.assign(document.createElement(tag), props);
+  kids.forEach((k) => n.append(k));
+  return n;
+};
+// All receipt text comes from OCR / a model: always inserted via textContent, never innerHTML.
+
+function money(v, cur) {
+  if (v === null || v === undefined) return "–";
+  try { return cur ? new Intl.NumberFormat(undefined, { style: "currency", currency: cur }).format(v) : v.toFixed(2); }
+  catch { return v.toFixed(2); }
+}
+
+function setStatus(kind, text) {
+  const s = $("status");
+  s.className = "show " + kind;
+  s.replaceChildren(...(kind === "busy" ? [el("span", { className: "spin" })] : []), el("span", { textContent: text }));
+}
+
+function detailRow(rec) {
+  const x = rec.extracted;
+  const items = el("table");
+  items.append(el("thead", {}, el("tr", {}, el("th", { textContent: "Item" }), el("th", { className: "num", textContent: "Qty" }), el("th", { className: "num", textContent: "Price" }))));
+  const tb = el("tbody");
+  x.line_items.forEach((i) => tb.append(el("tr", {}, el("td", { textContent: i.name }), el("td", { className: "num", textContent: String(i.quantity) }), el("td", { className: "num", textContent: money(i.price, x.currency) }))));
+  items.append(tb);
+  const td = el("td", { colSpan: 8 }, x.line_items.length ? items : el("span", { className: "hint", textContent: "No line items were found." }));
+  const meta = [x.time && `Time ${x.time}`, x.payment_method && `Paid with ${x.payment_method}`, `Read by ${x.engine}`].filter(Boolean).join("  |  ");
+  td.append(el("div", { className: "hint", textContent: meta, style: "margin-top:8px" }));
+  if (x.warnings.length) td.append(el("ul", {}, ...x.warnings.map((w) => el("li", { textContent: w }))));
+  return el("tr", { className: "detail", hidden: true }, td);
+}
+
+function render(list) {
+  const body = $("rows");
+  body.replaceChildren();
+  $("empty").hidden = list.length > 0;
+  $("count").textContent = list.length ? `${list.length} saved` : "";
+  list.forEach((rec) => {
+    const x = rec.extracted;
+    const detail = detailRow(rec);
+    const toggle = el("button", { className: "row-btn", textContent: rec.merchant_name || "Unknown merchant", ariaExpanded: "false" });
+    toggle.addEventListener("click", () => {
+      detail.hidden = !detail.hidden;
+      toggle.setAttribute("aria-expanded", String(!detail.hidden));
+    });
+    const badge = el("span", { className: "badge " + (x.needs_review ? "warn" : "ok"), textContent: x.needs_review ? "Review" : "OK" });
+    body.append(
+      el("tr", { className: "main" },
+        el("td", {}, toggle),
+        el("td", { textContent: rec.date || "–" }),
+        el("td", { className: "num", textContent: String(x.line_items.length) }),
+        el("td", { className: "num", textContent: money(x.tax, x.currency) }),
+        el("td", { className: "num", textContent: money(x.tip, x.currency) }),
+        el("td", { className: "num", textContent: money(rec.total_amount, x.currency) }),
+        el("td", {}, badge),
+        el("td", { textContent: rec.filename, className: "hint" })),
+      detail);
+  });
+}
+
+async function load() {
+  try {
+    const r = await fetch("/receipts");
+    if (!r.ok) throw new Error(`Server returned ${r.status}`);
+    render(await r.json());
+  } catch (e) { setStatus("error", `Could not load saved receipts: ${e.message}`); }
+}
+
+async function uploadAll(files) {
+  const list = [...files];
+  let ok = 0, review = 0, failed = [];
+  $("file").disabled = true;
+  for (const [i, f] of list.entries()) {
+    setStatus("busy", `Reading ${f.name} (${i + 1} of ${list.length})...`);
+    const fd = new FormData();
+    fd.append("file", f);
+    try {
+      const r = await fetch("/upload", { method: "POST", body: fd });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.detail || `Upload failed (${r.status})`);
+      ok++; if (body.extracted.needs_review) review++;
+      await load();
+    } catch (e) { failed.push(`${f.name}: ${e.message}`); }
+  }
+  $("file").disabled = false;
+  $("file").value = "";
+  if (failed.length) setStatus("error", `${failed.length} failed. ${failed.join(" | ")}`);
+  else if (review) setStatus("warn", `Saved ${ok}. ${review} need a quick check - open the row to see why.`);
+  else setStatus("ok", ok === 1 ? "Saved. Totals add up." : `Saved ${ok} receipts. Totals add up.`);
+}
+
+$("file").addEventListener("change", (e) => e.target.files.length && uploadAll(e.target.files));
+const drop = $("drop");
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop", (e) => e.dataTransfer.files.length && uploadAll(e.dataTransfer.files));
+load();
+</script>
+</body>
+</html>
