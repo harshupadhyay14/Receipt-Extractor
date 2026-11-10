@@ -15,7 +15,7 @@ OPENROUTER_MODELS = [
     m.strip()
     for m in os.getenv(
         "OPENROUTER_MODELS",
-        "qwen/qwen2.5-vl-32b-instruct:free,meta-llama/llama-3.2-11b-vision-instruct:free,google/gemma-3-27b-it:free",
+        "openrouter/free",
     ).split(",")
     if m.strip()
 ]
